@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PaymentMethod {
+  COD
+  ONLINE
+  CREDIT
+}
+
+enum PaymentStatus {
+  unpaid
+  paid
+}
+
+enum CreditStatus {
+  none
+  requested
+  approved
+  rejected
+  settled
+}
+
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  role      Role
+  createdAt DateTime @default(now())
+}
+
+model Store {
+  id          Int        @id @default(autoincrement())
+  name        String
+  address     String
+  ownerEmail  String     @unique
+  createdAt   DateTime   @default(now())
+
+  categories  Category[]
+  orders     Order[]
+
+}
+
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String
+  storeId   Int
+  store     Store    @relation(fields: [storeId], references: [id])
+  products  Product[]
+}
+
+model Product {
+  id         Int      @id @default(autoincrement())
+  name       String
+  price      Float
+  unit       String
+  stock      Int
+  moq        Int
+  active     Boolean  @default(true)
+  categoryId Int
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  orderItems OrderItem[]
+
+}
+
+model Order {
+  id            Int          @id @default(autoincrement())
+  retailerEmail String
+  storeId       Int
+  store         Store        @relation(fields: [storeId], references: [id])
+  status        OrderStatus  @default(pending)
+  totalAmount   Float
+  agentEmail    String?
+  createdAt     DateTime     @default(now())
+  
+ // 🔽 NEW PAYMENT FIELDS
+  paymentMethod PaymentMethod @default(COD)
+  paymentStatus PaymentStatus @default(unpaid)
+  creditStatus  CreditStatus  @default(none)
+
+  items         OrderItem[]
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  orderId   Int
+  order     Order   @relation(fields: [orderId], references: [id])
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+  price     Float
+  quantity  Int
+  subtotal  Float
+}
+
+enum OrderStatus {
+  pending
+  accepted
+  dispatched
+  delivered
+}
+
+
+
+enum Role {
+  wholesaler
+  retailer
+  agent
+}
