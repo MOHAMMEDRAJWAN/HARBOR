@@ -39,6 +39,39 @@ router.post(
   }
 );
 
+// VIEW PRODUCTS (Wholesaler)
+router.get(
+  "/",
+  authMiddleware,
+  onlyWholesaler,
+  async (req, res) => {
+    try {
+      const products = await prisma.product.findMany({
+        where: {
+          category: {
+            store: {
+              ownerEmail: req.user.email,
+            },
+          },
+        },
+        include: {
+          category: true,
+        },
+        
+      });
+
+      res.json({ products });
+    } catch (error) {
+      console.error("FULL PRODUCT LIST ERROR:", error);
+      res.status(500).json({
+        message: "Failed to fetch products",
+        error: error.message,
+      });
+    }
+  }
+);
+
+
 // LIST PRODUCTS OF A CATEGORY (Retailer browsing)
 router.get(
   "/category/:categoryId",

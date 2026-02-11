@@ -5,18 +5,21 @@ const prisma = require("../prisma");
 const authMiddleware = require("../middleware/auth.middleware");
 const { onlyWholesaler } = require("../middleware/role.middleware");
 
-// ADD CATEGORY
+// -----------------------------
+// ADD CATEGORY (Wholesaler)
+// POST /categories/:storeId
+// -----------------------------
 router.post(
   "/:storeId",
   authMiddleware,
   onlyWholesaler,
   async (req, res) => {
-    const { storeId } = req.params;
+    const storeId = parseInt(req.params.storeId);
     const { name } = req.body;
 
     const store = await prisma.store.findFirst({
       where: {
-        id: parseInt(storeId),
+        id: storeId,
         ownerEmail: req.user.email,
       },
     });
@@ -39,8 +42,10 @@ router.post(
   }
 );
 
-// LIST CATEGORIES
-// LIST CATEGORIES OF A STORE (Retailer browsing)
+// ------------------------------------
+// LIST CATEGORIES OF A STORE (SAFE)
+// GET /categories/store/:storeId
+// ------------------------------------
 router.get(
   "/store/:storeId",
   authMiddleware,
@@ -59,10 +64,9 @@ router.get(
       res.json({ categories });
     } catch (error) {
       console.error(error);
-      res.status(500).json({ message: "Failed to fetch categories" });
+      res.status(500).json({ message: "Failed fetching categories" });
     }
   }
 );
-
 
 module.exports = router;

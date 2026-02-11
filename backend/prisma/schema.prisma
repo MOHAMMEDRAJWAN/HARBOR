@@ -28,23 +28,35 @@ enum CreditStatus {
 
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  role      Role
-  createdAt DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  email       String   @unique
+  password    String
+  role        Role
+
+  // Wholesaler-specific fields
+  name        String
+  phone       String
+  address     String
+  businessName String?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  stores      Store[]
 }
 
 model Store {
-  id          Int        @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   name        String
   address     String
-  ownerEmail  String     @unique
-  createdAt   DateTime   @default(now())
+  ownerEmail  String
+  createdAt   DateTime @default(now())
 
+  // 🔗 Relation back to User
+  owner       User     @relation(fields: [ownerEmail], references: [email])
+
+  // Relations
   categories  Category[]
-  orders     Order[]
-
+  orders      Order[]
 }
 
 
@@ -66,6 +78,7 @@ model Product {
   active     Boolean  @default(true)
   categoryId Int
   category   Category @relation(fields: [categoryId], references: [id])
+  createdAt DateTime @default(now())
 
   orderItems OrderItem[]
 
@@ -103,6 +116,7 @@ model OrderItem {
 enum OrderStatus {
   pending
   accepted
+  assigned
   dispatched
   delivered
 }

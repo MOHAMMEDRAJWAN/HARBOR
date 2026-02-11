@@ -1,3 +1,4 @@
+const cors = require("cors");
 console.log("CWD =", process.cwd());
 console.log("__dirname =", __dirname);
 
@@ -9,11 +10,26 @@ require("dotenv").config({
 console.log("JWT_SECRET =", process.env.JWT_SECRET);
 
 const express = require("express");
+
 const app = express();
 
 app.use(express.json());
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
 
 // routes
+
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
+
 const healthRoute = require("./routes/health.route");
 app.use("/", healthRoute);
 

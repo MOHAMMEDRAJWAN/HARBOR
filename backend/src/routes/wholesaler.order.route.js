@@ -228,5 +228,49 @@ router.post(
   }
 );
 
+// ASSIGN AGENT TO ORDER (Wholesaler)
+router.post(
+  "/orders/:orderId/assign-agent",
+  authMiddleware,
+  onlyWholesaler,
+  async (req, res) => {
+    const orderId = parseInt(req.params.orderId);
+    const { agentEmail } = req.body;
+
+    if (!agentEmail) {
+      return res.status(400).json({
+        message: "agentEmail is required",
+      });
+    }
+
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+    });
+
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    if (order.status !== "accepted") {
+      return res.status(400).json({
+        message: "Agent can only be assigned to accepted orders",
+      });
+    }
+
+   const updatedOrder = await prisma.order.update({
+  where: { id: orderId },
+  data: {
+    agentEmail,
+    status: "assigned",
+  },
+});
+
+    res.json({
+      message: "Agent assigned successfully",
+      order: updatedOrder,
+    });
+  }
+);
+
 
 module.exports = router;
