@@ -1,0 +1,16 @@
+# Node
+node_modules/
+**/node_modules/
+
+# Expo
+.expo/
+
+# Vite
+.vite/
+
+# Build folders
+dist/
+build/
+
+# Environment
+.env
