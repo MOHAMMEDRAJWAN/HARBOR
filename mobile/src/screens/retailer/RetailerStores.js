@@ -102,7 +102,12 @@ export default function RetailerStores() {
                       <TouchableOpacity
                         style={styles.cartBtn}
                         onPress={() =>
-                          addToCart({ ...product, quantity: 1 })
+                          addToCart({
+                           id: product.id,
+                           name: product.name,
+                           price: product.price,
+                           storeId: store.id,   //  MUST pass storeId
+                          })
                         }
                       >
                         <Text style={{ color: "white" }}>

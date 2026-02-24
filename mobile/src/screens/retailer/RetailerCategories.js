@@ -49,6 +49,7 @@ export default function RetailerCategories({ route, navigation }) {
             onPress={() =>
               navigation.navigate("Products", {
                 categoryId: item.id,
+                storeId: route.params.storeId,
                 categoryName: item.name,
               })
             }

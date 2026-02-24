@@ -25,29 +25,37 @@ export default function RetailerCart({ navigation }) {
     (sum, item) => sum + item.price * item.quantity,
     0
   );
-
+  console.log("CART:", cart);
+  console.log("CART CONTENT:", cart);
   const placeOrder = async () => {
-    if (!cart.length) return;
+  if (!cart.length) return;
 
-    try {
-      const orderData = {
-        items: cart.map((item) => ({
-          productId: item.id,
-          quantity: item.quantity,
-        })),
-        paymentMethod,
-      };
+  try {
+    const storeId = cart[0].storeId; // ✅ dynamic
 
-      await api.post("/orders/2", orderData);
-
-      alert("Order placed successfully");
-      clearCart();
-      navigation.navigate("Orders");
-    } catch (err) {
-      alert(err.response?.data?.message || "Order failed");
-      console.log(err.response?.data);
+    if (!storeId) {
+      alert("Invalid store");
+      return;
     }
-  };
+
+    const orderData = {
+      items: cart.map((item) => ({
+        productId: item.id,
+        quantity: item.quantity,
+      })),
+      paymentMethod,
+    };
+
+    await api.post(`/orders/${storeId}`, orderData);
+
+    alert("Order placed successfully");
+    clearCart();
+    navigation.navigate("Orders");
+  } catch (err) {
+    alert(err.response?.data?.message || "Order failed");
+    console.log(err.response?.data);
+  }
+};
 
   // 🔥 Animated Quantity Button
   const AnimatedButton = ({ icon, onPress }) => {

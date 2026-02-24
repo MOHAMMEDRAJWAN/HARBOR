@@ -5,7 +5,7 @@ const authMiddleware = require("../middleware/auth.middleware");
 const { onlyAgent } = require("../middleware/role.middleware");
 
 /* =========================================
-   1️⃣ MY ACTIVE ORDERS (dispatched only)
+   1️⃣ MY ACTIVE ORDERS (assigned + dispatched)
 ========================================= */
 router.get(
   "/agent/orders/active",
@@ -16,16 +16,29 @@ router.get(
       const orders = await prisma.order.findMany({
         where: {
           agentEmail: req.user.email,
-          status: "dispatched",
+          status: {
+            in: ["assigned", "dispatched"],
+          },
         },
         include: {
           store: { select: { name: true } },
+          items: {
+            include: {
+              product: { select: { name: true } },
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
         },
       });
 
       res.json({ orders });
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch active orders" });
+      console.error(error);
+      res.status(500).json({
+        message: "Failed to fetch active orders",
+      });
     }
   }
 );
@@ -63,10 +76,18 @@ router.get(
   onlyAgent,
   async (req, res) => {
     try {
+      const now = new Date();
+
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
       const activeCount = await prisma.order.count({
         where: {
           agentEmail: req.user.email,
-          status: "dispatched",
+          status: { in: ["assigned", "dispatched"] },
         },
       });
 
@@ -77,21 +98,36 @@ router.get(
         },
         select: {
           agentEarnings: true,
+          createdAt: true,
         },
       });
 
       const deliveredCount = deliveredOrders.length;
 
-      const totalEarnings = deliveredOrders.reduce(
-        (sum, o) => sum + (o.agentEarnings || 0),
-        0
-      );
+      let totalEarnings = 0;
+      let weekEarnings = 0;
+      let monthEarnings = 0;
+
+      deliveredOrders.forEach((order) => {
+        const earnings = order.agentEarnings || 0;
+        totalEarnings += earnings;
+
+        if (new Date(order.createdAt) >= startOfWeek) {
+          weekEarnings += earnings;
+        }
+
+        if (new Date(order.createdAt) >= startOfMonth) {
+          monthEarnings += earnings;
+        }
+      });
 
       res.json({
         summary: {
           active: activeCount,
           delivered: deliveredCount,
           earnings: totalEarnings,
+          weekEarnings,
+          monthEarnings,
         },
       });
     } catch (error) {
@@ -102,7 +138,6 @@ router.get(
     }
   }
 );
-
 /* =========================================
    4️⃣ DELIVER ORDER (Hybrid Earnings Model)
 ========================================= */

@@ -66,13 +66,14 @@ export default function Orders() {
   ============================ */
 
   const acceptOrder = async (orderId) => {
-    try {
-      await api.post(`/orders/${orderId}/accept`);
-      fetchOrders();
-    } catch {
-      alert("Failed to accept order");
-    }
-  };
+  try {
+    await api.post(`/orders/${orderId}/accept`);
+    fetchOrders();
+  } catch (err) {
+    console.log("ACCEPT ERROR:", err.response?.data);
+    alert(err.response?.data?.message || "Failed to accept order");
+  }
+};
 
   const rejectOrder = async (orderId) => {
     try {
@@ -330,16 +331,19 @@ export default function Orders() {
                   marginTop: 8,
                 }}
               >
-                Mark as Dispatched
+                
               </button>
             </div>
           )}
 
           {/* DISPATCHED */}
-          {order.status === "dispatched" && (
-            <p style={{ marginTop: 10, color: "purple" }}>
-              Waiting for agent delivery
-            </p>
+          {order.status === "assigned" && (
+          <button
+            className="primary-btn"
+            onClick={() => dispatchOrder(order.id)}
+            >
+              Dispatch
+            </button>
           )}
         </div>
       ))}

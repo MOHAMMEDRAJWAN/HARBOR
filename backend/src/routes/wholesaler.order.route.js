@@ -99,37 +99,33 @@ router.post(
           message: "Only pending orders can be accepted",
         });
 
-      // 🔹 CREDIT HANDLING
       if (order.paymentMethod === "CREDIT") {
-        const retailer = await prisma.user.findUnique({
-          where: { email: order.retailerEmail },
-        });
 
-        if (!retailer)
-          return res.status(404).json({ message: "Retailer not found" });
+  const retailer = await prisma.user.findUnique({
+    where: { email: order.retailerEmail },
+  });
 
-        if (retailer.creditStatus !== "approved")
-          return res.status(400).json({
-            message: "Retailer credit not approved",
-          });
+  if (retailer.creditStatus !== "approved")
+    return res.status(400).json({
+      message: "Retailer credit not approved",
+    });
 
-        const available =
-          retailer.creditLimit - retailer.creditUsed;
+  const available =
+    retailer.creditLimit - retailer.creditUsed;
 
-        if (available < order.totalAmount)
-          return res.status(400).json({
-            message: "Insufficient credit limit",
-          });
+  if (available < order.totalAmount)
+    return res.status(400).json({
+      message: "Insufficient credit limit",
+    });
 
-        // Deduct credit
-        await prisma.user.update({
-          where: { email: retailer.email },
-          data: {
-            creditUsed: {
-              increment: order.totalAmount,
-            },
-          },
-        });
+  await prisma.user.update({
+    where: { email: retailer.email },
+    data: {
+      creditUsed: {
+        increment: order.totalAmount,
+      },
+    },
+  });
 
         await prisma.order.update({
           where: { id: orderId },

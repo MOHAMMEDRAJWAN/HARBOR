@@ -142,9 +142,7 @@ router.get(
   async (req, res) => {
     try {
       const products = await prisma.product.findMany({
-        where: {
-          active: true,
-        },
+        where: { active: true },
         select: {
           id: true,
           name: true,
@@ -154,15 +152,17 @@ router.get(
           moq: true,
           category: {
             select: {
-              name: true,
-            },
-          },
-        },
+              storeId: true,   
+              store: {
+                select: { id: true, name: true }
+              }
+            }
+          }
+        }
       });
 
       res.json({ products });
     } catch (error) {
-      console.error(error);
       res.status(500).json({ message: "Failed to fetch products" });
     }
   }

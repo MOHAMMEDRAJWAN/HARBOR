@@ -29,7 +29,10 @@ export default function AgentStack() {
 
           if (route.name === "Home") iconName = "cube";
           if (route.name === "History") iconName = "time";
-          if (route.name === "Profile") iconName = "person";
+          if (route.name === "Profile") iconName = "person";  
+          if (route.name === "Orders") iconName = "list";
+          if (route.name === "Dashboard") iconName = "stats-chart";
+
 
           return (
             <Ionicons

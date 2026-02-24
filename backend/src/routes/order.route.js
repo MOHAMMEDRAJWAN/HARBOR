@@ -41,6 +41,7 @@ router.post(
           message: "Store not found",
         });
       }
+      console.log("STORE ID RECEIVED:", storeId);
 
       let totalAmount = 0;
       const orderItemsData = [];
@@ -102,7 +103,7 @@ router.post(
             throw new Error("Insufficient credit limit");
           }
 
-          // Deduct credit safely
+          /* Deduct credit safely
           await tx.user.update({
             where: { email: req.user.email },
             data: {
@@ -110,7 +111,7 @@ router.post(
                 increment: totalAmount,
               },
             },
-          });
+          });*/
 
           creditStatus = "approved";
         }

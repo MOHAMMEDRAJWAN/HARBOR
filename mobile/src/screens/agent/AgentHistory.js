@@ -5,12 +5,14 @@ import {
   FlatList,
   StyleSheet,
   ActivityIndicator,
+  RefreshControl
 } from "react-native";
 import api from "../../api/axios";
 
 export default function AgentHistory() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchHistory = async () => {
     try {
@@ -23,6 +25,12 @@ export default function AgentHistory() {
     }
   };
 
+   
+  const onRefresh = async () => {
+  setRefreshing(true);
+  await fetchHistory();
+  setRefreshing(false);
+};
   useEffect(() => {
     fetchHistory();
   }, []);
@@ -40,6 +48,13 @@ export default function AgentHistory() {
       <FlatList
         data={orders}
         keyExtractor={(item) => item.id.toString()}
+        refreshControl={
+          <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor="#4f8cff"
+        />
+          }
         renderItem={({ item }) => (
           <View style={styles.card}>
             <Text style={styles.title}>
@@ -52,6 +67,10 @@ export default function AgentHistory() {
 
             <Text style={styles.delivered}>
               Delivered
+            </Text>
+
+            <Text style={styles.text}>
+              Earnings: ₹ {item.agentEarnings || 0}
             </Text>
           </View>
         )}

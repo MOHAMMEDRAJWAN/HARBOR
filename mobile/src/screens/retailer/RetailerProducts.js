@@ -1,6 +1,4 @@
-import { useEffect, useState } from "react";
-import { useContext } from "react";
-import { CartContext } from "../../context/CartContext";
+import { useEffect, useState, useContext } from "react";
 import {
   View,
   Text,
@@ -9,21 +7,22 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from "react-native";
+import { CartContext } from "../../context/CartContext";
 import api from "../../api/axios";
 
-export default function RetailerProducts() {
+export default function RetailerProducts({ route }) {
+  const { categoryId, storeId } = route.params; // ✅ FIX
+
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const { addToCart } = useContext(CartContext);
-  const { categoryId } = route.params;
 
   const fetchProducts = async () => {
     try {
       const res = await api.get(`/products/category/${categoryId}`);
-      console.log("Products:", res.data); // 🔍 Debug
       setProducts(res.data.products || []);
     } catch (err) {
-      console.log("Failed to fetch products", err);
+      console.log("Failed to fetch products", err.response?.data);
     } finally {
       setLoading(false);
     }
@@ -34,20 +33,27 @@ export default function RetailerProducts() {
   }, []);
 
   const renderItem = ({ item }) => (
-  <View style={styles.card}>
-    <Text style={styles.name}>{item.name}</Text>
-    <Text style={styles.price}>₹ {item.price}</Text>
-    <Text style={styles.detail}>Stock: {item.stock}</Text>
-    <Text style={styles.detail}>MOQ: {item.moq}</Text>
+    <View style={styles.card}>
+      <Text style={styles.name}>{item.name}</Text>
+      <Text style={styles.price}>₹ {item.price}</Text>
+      <Text style={styles.detail}>Stock: {item.stock}</Text>
+      <Text style={styles.detail}>MOQ: {item.moq}</Text>
 
-    <TouchableOpacity
-      style={styles.cartButton}
-      onPress={() => addToCart(item)}
-    >
-      <Text style={{ color: "white" }}>Add to Cart</Text>
-    </TouchableOpacity>
-  </View>
-);
+      <TouchableOpacity
+        style={styles.cartButton}
+        onPress={() =>
+          addToCart({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            storeId: storeId, // ✅ CORRECT
+          })
+        }
+      >
+        <Text style={{ color: "white" }}>Add to Cart</Text>
+      </TouchableOpacity>
+    </View>
+  );
 
   if (loading) {
     return (
@@ -80,7 +86,7 @@ export default function RetailerProducts() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0f2027", // ✅ FIX
+    backgroundColor: "#0f2027",
   },
   loader: {
     flex: 1,
@@ -114,10 +120,10 @@ const styles = StyleSheet.create({
     color: "#ccc",
   },
   cartButton: {
-  backgroundColor: "#4f8cff",
-  padding: 10,
-  borderRadius: 8,
-  marginTop: 10,
-  alignItems: "center",
-},
+    backgroundColor: "#4f8cff",
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 10,
+    alignItems: "center",
+  },
 });
