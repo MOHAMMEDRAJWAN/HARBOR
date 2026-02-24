@@ -4,6 +4,7 @@ const router = express.Router();
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const prisma = require("../../prisma");
+const authMiddleware = require("../../middleware/auth.middleware");
 
 
 console.log("AUTH ROUTE FILE LOADED");
@@ -219,7 +220,24 @@ router.post("/login", async (req, res) => {
       { expiresIn: "1h" }
     );
 
-    res.json({ token });
+    const fullUser = await prisma.user.findUnique({
+      where: { email: user.email },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        name: true,
+        creditLimit: true,
+        creditStatus: true,
+        creditUsed: true,
+      },
+    });
+
+    res.json({
+      token,
+      user: fullUser,
+    });
+
   } catch (error) {
     console.error(error);
     res.status(500).json({
@@ -229,7 +247,46 @@ router.post("/login", async (req, res) => {
 });
 
 
+// ===============================
+// UPDATE RETAILER PROFILE
+// ===============================
+router.put(
+  "/me/update",
+  authMiddleware,
+  async (req, res) => {
+    const { name, phone, address } = req.body;
 
+    try {
+      const updated = await prisma.user.update({
+        where: { email: req.user.email },
+        data: {
+          name,
+          phone,
+          address,
+        },
+      });
+
+      res.json({
+        message: "Profile updated",
+        user: {
+          id: updated.id,
+          email: updated.email,
+          role: updated.role,
+          name: updated.name,
+          phone: updated.phone,
+          address: updated.address,
+          creditLimit: updated.creditLimit,
+          creditStatus: updated.creditStatus,
+          creditUsed: updated.creditUsed,
+        },
+      });
+    } catch (err) {
+      res.status(500).json({
+        message: "Update failed",
+      });
+    }
+  }
+);
 
 
 module.exports = router;

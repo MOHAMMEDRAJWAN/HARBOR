@@ -69,4 +69,30 @@ router.get(
   }
 );
 
+// GET CATEGORIES OF LOGGED IN WHOLESALER STORE
+router.get(
+  "/my",
+  authMiddleware,
+  onlyWholesaler,
+  async (req, res) => {
+    const store = await prisma.store.findFirst({
+      where: { ownerEmail: req.user.email },
+    });
+
+    if (!store) {
+      return res.status(404).json({ message: "Store not found" });
+    }
+
+    const categories = await prisma.category.findMany({
+      where: { storeId: store.id },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+
+    res.json({ categories });
+  }
+);
+
 module.exports = router;

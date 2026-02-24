@@ -216,6 +216,29 @@ router.get(
   }
 );
 
+// ===============================
+// LIST STORES (Retailer View)
+// ===============================
+router.get(
+  "/stores",
+  authMiddleware,
+  async (req, res) => {
+    try {
+      const stores = await prisma.store.findMany({
+        select: {
+          id: true,
+          name: true,
+          address: true,
+        },
+      });
+
+      res.json({ stores });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Failed to fetch stores" });
+    }
+  }
+);
 
 
 module.exports = router;

@@ -52,8 +52,8 @@ app.use("/", orderRoute);
 const wholesalerOrderRoute = require("./routes/wholesaler.order.route");
 app.use("/", wholesalerOrderRoute);
 
-const agentRoute = require("./routes/agent.route");
-app.use("/", agentRoute);
+/*const agentRoute = require("./routes/agent.route");
+app.use("/", agentRoute);*/
 
 const categoryRoutes = require("./routes/category.route");
 app.use("/categories", categoryRoutes);
@@ -67,6 +67,17 @@ app.use("/", retailerOrderRoute);
 const agentOrderRoute = require("./routes/agent.order.route");
 app.use("/", agentOrderRoute);
 
+//const creditSettlementRoute = require("./routes/credit.settlement.route");
+//app.use("/", creditSettlementRoute);
+
+//const creditAccountsRoute = require("./routes/credit.accounts.route");
+//app.use("/", creditAccountsRoute);
+
+const creditRoutes = require("./routes/credit.routes");
+app.use("/", creditRoutes);
+
+const invoiceRoute = require("./routes/invoice.route");
+app.use("/", invoiceRoute);
 
 app.listen(3000, () => {
   console.log("Server running on http://localhost:3000");

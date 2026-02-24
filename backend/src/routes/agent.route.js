@@ -1,4 +1,4 @@
-const express = require("express");
+/*const express = require("express");
 const router = express.Router();
 const prisma = require("../prisma");
 const authMiddleware = require("../middleware/auth.middleware");
@@ -115,4 +115,4 @@ router.post(
   }
 );
 
-module.exports = router;
+module.exports = router;*/

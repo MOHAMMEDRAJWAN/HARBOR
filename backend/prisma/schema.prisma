@@ -7,6 +7,87 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id           Int          @id @default(autoincrement())
+  email        String       @unique
+  password     String
+  role         Role
+  createdAt    DateTime     @default(now())
+  address      String
+  businessName String?
+  name         String
+  phone        String
+  creditLimit  Float        @default(0)
+  creditStatus CreditStatus @default(none)
+  creditUsed   Float        @default(0)
+  Order        Order[]
+  stores       Store[]
+}
+
+model Store {
+  id         Int        @id @default(autoincrement())
+  name       String
+  address    String
+  ownerEmail String
+  createdAt  DateTime   @default(now())
+  categories Category[]
+  orders     Order[]
+  owner      User       @relation(fields: [ownerEmail], references: [email])
+}
+
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     String
+  storeId  Int
+  store    Store     @relation(fields: [storeId], references: [id])
+  products Product[]
+}
+
+model Product {
+  id         Int         @id @default(autoincrement())
+  name       String
+  price      Float
+  unit       String
+  stock      Int
+  moq        Int
+  active     Boolean     @default(true)
+  categoryId Int
+  createdAt  DateTime    @default(now())
+  orderItems OrderItem[]
+  category   Category    @relation(fields: [categoryId], references: [id])
+}
+
+model Order {
+  id            Int           @id @default(autoincrement())
+  retailerEmail String
+  storeId       Int
+  status        OrderStatus   @default(pending)
+
+  agentEarnings Float?        @default(0)  // ✅ Added safely
+
+  totalAmount   Float
+  agentEmail    String?
+  createdAt     DateTime      @default(now())
+  creditStatus  CreditStatus  @default(none)
+  paymentMethod PaymentMethod @default(COD)
+  paymentStatus PaymentStatus @default(unpaid)
+
+  User          User          @relation(fields: [retailerEmail], references: [email])
+  store         Store         @relation(fields: [storeId], references: [id])
+  items         OrderItem[]
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  orderId   Int
+  productId Int
+  price     Float
+  quantity  Int
+  subtotal  Float
+  order     Order   @relation(fields: [orderId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+}
+
 enum PaymentMethod {
   COD
   ONLINE
@@ -26,102 +107,14 @@ enum CreditStatus {
   settled
 }
 
-
-model User {
-  id          Int      @id @default(autoincrement())
-  email       String   @unique
-  password    String
-  role        Role
-
-  // Wholesaler-specific fields
-  name        String
-  phone       String
-  address     String
-  businessName String?
-  createdAt   DateTime @default(now())
-
-  // Relations
-  stores      Store[]
-}
-
-model Store {
-  id          Int      @id @default(autoincrement())
-  name        String
-  address     String
-  ownerEmail  String
-  createdAt   DateTime @default(now())
-
-  // 🔗 Relation back to User
-  owner       User     @relation(fields: [ownerEmail], references: [email])
-
-  // Relations
-  categories  Category[]
-  orders      Order[]
-}
-
-
-model Category {
-  id        Int      @id @default(autoincrement())
-  name      String
-  storeId   Int
-  store     Store    @relation(fields: [storeId], references: [id])
-  products  Product[]
-}
-
-model Product {
-  id         Int      @id @default(autoincrement())
-  name       String
-  price      Float
-  unit       String
-  stock      Int
-  moq        Int
-  active     Boolean  @default(true)
-  categoryId Int
-  category   Category @relation(fields: [categoryId], references: [id])
-  createdAt DateTime @default(now())
-
-  orderItems OrderItem[]
-
-}
-
-model Order {
-  id            Int          @id @default(autoincrement())
-  retailerEmail String
-  storeId       Int
-  store         Store        @relation(fields: [storeId], references: [id])
-  status        OrderStatus  @default(pending)
-  totalAmount   Float
-  agentEmail    String?
-  createdAt     DateTime     @default(now())
-  
- // 🔽 NEW PAYMENT FIELDS
-  paymentMethod PaymentMethod @default(COD)
-  paymentStatus PaymentStatus @default(unpaid)
-  creditStatus  CreditStatus  @default(none)
-
-  items         OrderItem[]
-}
-
-model OrderItem {
-  id        Int     @id @default(autoincrement())
-  orderId   Int
-  order     Order   @relation(fields: [orderId], references: [id])
-  productId Int
-  product   Product @relation(fields: [productId], references: [id])
-  price     Float
-  quantity  Int
-  subtotal  Float
-}
-
 enum OrderStatus {
   pending
   accepted
-  assigned
   dispatched
   delivered
+  assigned
+  rejected
 }
-
-
 
 enum Role {
   wholesaler
