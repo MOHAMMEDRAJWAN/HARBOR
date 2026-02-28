@@ -18,7 +18,13 @@ router.post(
         where: { email: req.user.email },
       });
 
-      if (retailer.creditStatus === "approved") {
+      // if any wholesaler has already approved credit for this retailer,
+      // we should not allow another global request (and avoid misleading
+      // "already approved" messages when there are no accounts).
+      const approvedAccount = await prisma.creditAccount.findFirst({
+        where: { retailerId: retailer.id, creditStatus: "approved" },
+      });
+      if (approvedAccount) {
         return res.status(400).json({
           message: "Credit already approved",
         });
@@ -151,6 +157,13 @@ router.put(
         },
       });
 
+      // also mark the retailer's overall creditStatus so the global
+      // flag stays in sync; this helps downstream checks and UI logic.
+      await prisma.user.update({
+        where: { id: retailerId },
+        data: { creditStatus: "approved" },
+      });
+
       res.json({ message: "Credit approved", creditAccount });
     } catch (error) {
       console.error(error);
@@ -195,6 +208,14 @@ router.put(
           creditUsed: 0,
           creditStatus: "rejected",
         },
+      });
+
+      // if this wholesaler rejects the only approved credit, we could
+      // reset the retailer's global status back to "none" or leave as
+      // requested. keeping it simple: set to rejected.
+      await prisma.user.update({
+        where: { id: retailerId },
+        data: { creditStatus: "rejected" },
       });
 
       res.json({ message: "Credit rejected", creditAccount });
@@ -323,7 +344,7 @@ router.put(
 );
 
 // ===============================
-// RETAILER VIEW OWN CREDIT INFO
+// RETAILER VIEW OWN CREDIT INFO (AGGREGATE)
 // ===============================
 router.get(
   "/credit/me",
@@ -346,6 +367,102 @@ router.get(
       res.status(500).json({
         message: "Failed to fetch credit info",
       });
+    }
+  }
+);
+
+// ===============================
+// RETAILER VIEW CREDIT ACCOUNTS BY WHOLESALER
+// ===============================
+router.get(
+  "/credit/accounts/retailer",
+  authMiddleware,
+  onlyRetailer,
+  async (req, res) => {
+    try {
+      // find retailer record
+      const retailer = await prisma.user.findUnique({
+        where: { email: req.user.email },
+      });
+      if (!retailer) {
+        return res.status(404).json({ message: "Retailer not found" });
+      }
+
+      const accounts = await prisma.creditAccount.findMany({
+        where: {
+          retailerId: retailer.id,
+          creditStatus: "approved",
+        },
+        include: {
+          wholesaler: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      const formatted = accounts.map((acc) => ({
+        accountId: acc.id,
+        wholesaler: acc.wholesaler,
+        creditLimit: acc.creditLimit,
+        creditUsed: acc.creditUsed,
+        available: acc.creditLimit - acc.creditUsed,
+      }));
+
+      res.json({ accounts: formatted });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Failed to fetch accounts" });
+    }
+  }
+);
+
+// ===============================
+// RETAILER SETTLE SPECIFIC CREDIT ACCOUNT
+// ===============================
+router.put(
+  "/credit/account/:accountId/settle",
+  authMiddleware,
+  onlyRetailer,
+  async (req, res) => {
+    const accountId = parseInt(req.params.accountId);
+    const { amount } = req.body;
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ message: "Valid amount required" });
+    }
+
+    try {
+      const retailer = await prisma.user.findUnique({
+        where: { email: req.user.email },
+      });
+      if (!retailer) {
+        return res.status(404).json({ message: "Retailer not found" });
+      }
+
+      const account = await prisma.creditAccount.findUnique({
+        where: { id: accountId },
+      });
+      if (!account || account.retailerId !== retailer.id) {
+        return res.status(404).json({ message: "Credit account not found" });
+      }
+
+      if (account.creditUsed < amount) {
+        return res.status(400).json({ message: "Amount exceeds credit used" });
+      }
+
+      const updated = await prisma.creditAccount.update({
+        where: { id: accountId },
+        data: { creditUsed: account.creditUsed - amount },
+      });
+
+      res.json({ message: "Credit settled successfully", account: updated });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Settlement failed" });
     }
   }
 );

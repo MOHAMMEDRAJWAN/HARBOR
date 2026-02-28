@@ -54,7 +54,9 @@ export default function RetailerCart({ navigation }) {
     navigation.navigate("Orders");
   } catch (err) {
     const msg = err.response?.data?.message || "Order failed";
-    console.log(err.response?.data);
+    console.log("Order error status:", err.response?.status);
+    console.log("Order error data:", err.response?.data);
+    console.log("Order error full:", err);
 
     if (msg && msg.includes("No credit account with this wholesaler")) {
       Alert.alert(

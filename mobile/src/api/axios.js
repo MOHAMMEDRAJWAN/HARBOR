@@ -7,9 +7,14 @@ const api = axios.create({
 
 api.interceptors.request.use(async (config) => {
   const token = await AsyncStorage.getItem("token");
+  console.log("[axios] Token check for:", config.url);
+  console.log("[axios] Token exists:", !!token);
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+    console.log("[axios] Auth header set");
+  } else {
+    console.log("[axios] No token found - request will fail auth");
   }
 
   return config;

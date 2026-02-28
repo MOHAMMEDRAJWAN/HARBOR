@@ -2,16 +2,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model Notification {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  message   String
-  read      Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id])
-}
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -30,10 +20,21 @@ model User {
   creditLimit            Float           @default(0)
   creditStatus           CreditStatus    @default(none)
   creditUsed             Float           @default(0)
-  Order                  Order[]
+  orders                 Order[]
   stores                 Store[]
   approvedCreditAccounts CreditAccount[] @relation("Wholesaler")
   retailerCreditAccounts CreditAccount[] @relation("Retailer")
+  notifications          Notification[]
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model CreditAccount {
@@ -45,8 +46,8 @@ model CreditAccount {
   creditStatus CreditStatus @default(none)
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
-  wholesaler   User         @relation("Wholesaler", fields: [wholesalerId], references: [id])
-  retailer     User         @relation("Retailer", fields: [retailerId], references: [id])
+  wholesaler   User         @relation("Wholesaler", fields: [wholesalerId], references: [id], onDelete: Cascade)
+  retailer     User         @relation("Retailer", fields: [retailerId], references: [id], onDelete: Cascade)
 
   @@unique([wholesalerId, retailerId])
 }
@@ -58,12 +59,21 @@ model Store {
   ownerEmail String
   createdAt  DateTime   @default(now())
   categories Category[]
+  products   Product[]
   orders     Order[]
-  owner      User       @relation(fields: [ownerEmail], references: [email])
+  owner      User       @relation(fields: [ownerEmail], references: [email], onDelete: Cascade)
 }
 
 model Category {
+  id        Int       @id @default(autoincrement())
+  name      String
+  storeId   Int
+  createdAt DateTime  @default(now())
+  store     Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  products  Product[]
 }
+
+model Product {
   id         Int         @id @default(autoincrement())
   name       String
   price      Float
@@ -71,10 +81,12 @@ model Category {
   stock      Int
   moq        Int
   active     Boolean     @default(true)
+  storeId    Int
   categoryId Int
   createdAt  DateTime    @default(now())
   orderItems OrderItem[]
-  category   Category    @relation(fields: [categoryId], references: [id])
+  store      Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  category   Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 }
 
 model Order {
@@ -82,19 +94,16 @@ model Order {
   retailerEmail String
   storeId       Int
   status        OrderStatus @default(pending)
-
-  agentEarnings Float? @default(0) // ✅ Added safely
-
+  agentEarnings Float?      @default(0)
   totalAmount   Float
   agentEmail    String?
   createdAt     DateTime      @default(now())
   creditStatus  CreditStatus  @default(none)
   paymentMethod PaymentMethod @default(COD)
   paymentStatus PaymentStatus @default(unpaid)
-
-  User  User        @relation(fields: [retailerEmail], references: [email])
-  store Store       @relation(fields: [storeId], references: [id])
-  items OrderItem[]
+  user          User          @relation(fields: [retailerEmail], references: [email], onDelete: Cascade)
+  store         Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  items         OrderItem[]
 }
 
 model OrderItem {
@@ -104,8 +113,8 @@ model OrderItem {
   price     Float
   quantity  Int
   subtotal  Float
-  order     Order   @relation(fields: [orderId], references: [id])
-  product   Product @relation(fields: [productId], references: [id])
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 enum PaymentMethod {
