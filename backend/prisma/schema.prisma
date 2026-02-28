@@ -2,6 +2,16 @@ generator client {
   provider = "prisma-client-js"
 }
 
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -53,14 +63,7 @@ model Store {
 }
 
 model Category {
-  id       Int       @id @default(autoincrement())
-  name     String
-  storeId  Int
-  store    Store     @relation(fields: [storeId], references: [id])
-  products Product[]
 }
-
-model Product {
   id         Int         @id @default(autoincrement())
   name       String
   price      Float

@@ -118,6 +118,8 @@ router.post(
               data: { creditStatus: "requested" },
             });
 
+            // (notification creation skipped - wholesaler will see request via /credit/requests)
+
             throw new Error(
               "No credit account with this wholesaler. Credit request sent to wholesaler. Purchase with credit is not allowed until approval."
             );

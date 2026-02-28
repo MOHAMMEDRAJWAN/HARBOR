@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Animated,
+  Alert,
 } from "react-native";
 import { CartContext } from "../../context/CartContext";
 import api from "../../api/axios";
@@ -52,8 +53,24 @@ export default function RetailerCart({ navigation }) {
     clearCart();
     navigation.navigate("Orders");
   } catch (err) {
-    alert(err.response?.data?.message || "Order failed");
+    const msg = err.response?.data?.message || "Order failed";
     console.log(err.response?.data);
+
+    if (msg && msg.includes("No credit account with this wholesaler")) {
+      Alert.alert(
+        "Credit Request Sent",
+        "A credit request was sent to the wholesaler. You cannot complete this purchase on credit until they approve. Do you want to view your credit status?",
+        [
+          {
+            text: "View Credit",
+            onPress: () => navigation.navigate("Credit"),
+          },
+          { text: "OK", style: "cancel" },
+        ]
+      );
+    } else {
+      Alert.alert("Order Error", msg);
+    }
   }
 };
 
