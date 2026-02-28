@@ -3,73 +3,40 @@ const router = express.Router();
 const prisma = require("../prisma");
 const authMiddleware = require("../middleware/auth.middleware");
 const { onlyWholesaler } = require("../middleware/role.middleware");
+console.log("PRODUCT ROUTE FILE LOADED");
 
 // ADD PRODUCT
-router.post(
-  "/:categoryId",
-  authMiddleware,
-  onlyWholesaler,
-  async (req, res) => {
-    try {
-      const categoryId = parseInt(req.params.categoryId);
-      const { name, price, unit, stock, moq } = req.body;
+router.post("/:categoryId", async (req, res) => {
+  try {
+    const categoryId = parseInt(req.params.categoryId);
+    const { name, price, unit, stock, moq } = req.body;
 
-      // 🔎 Basic validation
-      if (!name || !price || !unit || !stock || !moq) {
-        return res.status(400).json({
-          message: "All product fields are required",
-        });
-      }
+    const category = await prisma.category.findUnique({
+      where: { id: categoryId },
+    });
 
-      // 🔢 Convert types properly
-      const parsedPrice = parseFloat(price);
-      const parsedStock = parseInt(stock);
-      const parsedMoq = parseInt(moq);
-
-      if (
-        isNaN(parsedPrice) ||
-        isNaN(parsedStock) ||
-        isNaN(parsedMoq)
-      ) {
-        return res.status(400).json({
-          message: "Invalid numeric values",
-        });
-      }
-
-      const category = await prisma.category.findUnique({
-        where: { id: categoryId },
-      });
-
-      if (!category) {
-        return res.status(404).json({
-          message: "Category not found",
-        });
-      }
-
-      const product = await prisma.product.create({
-        data: {
-          name,
-          price: parsedPrice,
-          unit,
-          stock: parsedStock,
-          moq: parsedMoq,
-          categoryId,
-        },
-      });
-
-      res.status(201).json({
-        message: "Product added successfully",
-        product,
-      });
-    } catch (error) {
-      console.error("PRODUCT CREATE ERROR:", error);
-      res.status(500).json({
-        message: "Failed to add product",
-        error: error.message,
-      });
+    if (!category) {
+      return res.status(404).json({ message: "Category not found" });
     }
+
+    const product = await prisma.product.create({
+      data: {
+        name,
+        price: parseFloat(price),
+        unit,
+        stock: parseInt(stock),
+        moq: parseInt(moq),
+        categoryId,
+        storeId: category.storeId,
+      },
+    });
+
+    res.status(201).json(product);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Failed to add product" });
   }
-);
+});
 
 // VIEW PRODUCTS (Wholesaler)
 router.get(

@@ -100,40 +100,13 @@ router.post(
         });
 
       if (order.paymentMethod === "CREDIT") {
-
-  const retailer = await prisma.user.findUnique({
-    where: { email: order.retailerEmail },
-  });
-
-  if (retailer.creditStatus !== "approved")
-    return res.status(400).json({
-      message: "Retailer credit not approved",
-    });
-
-  const available =
-    retailer.creditLimit - retailer.creditUsed;
-
-  if (available < order.totalAmount)
-    return res.status(400).json({
-      message: "Insufficient credit limit",
-    });
-
-  await prisma.user.update({
-    where: { email: retailer.email },
-    data: {
-      creditUsed: {
-        increment: order.totalAmount,
-      },
-    },
-  });
-
         await prisma.order.update({
           where: { id: orderId },
           data: { creditStatus: "approved" },
         });
       }
 
-      // 🔹 Reduce stock
+      // 🔹 Reduce stock (still here for now)
       for (const item of order.items) {
         await prisma.product.update({
           where: { id: item.productId },

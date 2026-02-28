@@ -4,6 +4,11 @@ const prisma = require("../prisma");
 const authMiddleware = require("../middleware/auth.middleware");
 const { onlyRetailer, onlyWholesaler } = require("../middleware/role.middleware");
 
+//router.use((req, res, next) => {
+//  console.log("CREDIT ROUTE HIT:", req.method, req.originalUrl);
+//  next();
+//});
+
 
 // ===============================
 // RETAILER REQUEST CREDIT
@@ -278,10 +283,85 @@ router.get(
 );
 
 // ===============================
+// RETAILER SELF CREDIT SETTLEMENT
+// ===============================
+router.put(
+  "/credit/self/settle",
+  authMiddleware,
+  onlyRetailer,
+  async (req, res) => {
+    console.log("SELF SETTLE ROUTE HIT");
+    const { amount } = req.body;
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({
+        message: "Valid amount required",
+      });
+    }
+
+    try {
+      const retailer = await prisma.user.findUnique({
+        where: { email: req.user.email },
+      });
+
+      const accounts = await prisma.creditAccount.findMany({
+        where: {
+          retailerId: retailer.id,
+          creditStatus: "approved",
+        },
+      });
+
+      if (!accounts.length) {
+        return res.status(400).json({
+          message: "No approved credit accounts",
+        });
+      }
+
+      let remainingAmount = amount;
+
+      for (const account of accounts) {
+        if (remainingAmount <= 0) break;
+
+        const deduct = Math.min(
+          remainingAmount,
+          account.creditUsed
+        );
+
+        if (deduct > 0) {
+          await prisma.creditAccount.update({
+            where: { id: account.id },
+            data: {
+              creditUsed: account.creditUsed - deduct,
+            },
+          });
+
+          remainingAmount -= deduct;
+        }
+      }
+
+      if (remainingAmount > 0) {
+        return res.status(400).json({
+          message: "Amount exceeds total credit used",
+        });
+      }
+
+      res.json({
+        message: "Credit settled successfully",
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({
+        message: "Settlement failed",
+      });
+    }
+  }
+);
+
+// ===============================
 // SETTLE CREDIT (Wholesaler)
 // ===============================
 router.put(
-  "/credit/:retailerId/settle",
+  "/credit/retailer/:retailerId/settle",
   authMiddleware,
   onlyWholesaler,
   async (req, res) => {
@@ -354,16 +434,33 @@ router.get(
     try {
       const retailer = await prisma.user.findUnique({
         where: { email: req.user.email },
-        select: {
-          creditLimit: true,
-          creditUsed: true,
-          creditStatus: true,
+      });
+
+      const accounts = await prisma.creditAccount.findMany({
+        where: {
+          retailerId: retailer.id,
+          creditStatus: "approved",
         },
       });
 
-      res.json({ credit: retailer });
+      const totalLimit = accounts.reduce(
+        (sum, acc) => sum + acc.creditLimit,
+        0
+      );
+
+      const totalUsed = accounts.reduce(
+        (sum, acc) => sum + acc.creditUsed,
+        0
+      );
+
+      res.json({
+        credit: {
+          creditStatus: retailer.creditStatus,
+          creditLimit: totalLimit,
+          creditUsed: totalUsed,
+        },
+      });
     } catch (error) {
-      console.error(error);
       res.status(500).json({
         message: "Failed to fetch credit info",
       });
@@ -467,57 +564,6 @@ router.put(
   }
 );
 
-// ===============================
-// RETAILER SELF CREDIT SETTLEMENT
-// ===============================
-router.put(
-  "/credit/self/settle",
-  authMiddleware,
-  onlyRetailer,
-  async (req, res) => {
-    const { amount } = req.body;
 
-    if (!amount || amount <= 0) {
-      return res.status(400).json({
-        message: "Valid amount required",
-      });
-    }
-
-    try {
-      const retailer = await prisma.user.findUnique({
-        where: { email: req.user.email },
-      });
-
-      if (!retailer) {
-        return res.status(404).json({
-          message: "Retailer not found",
-        });
-      }
-
-      if (retailer.creditUsed < amount) {
-        return res.status(400).json({
-          message: "Amount exceeds credit used",
-        });
-      }
-
-      const updated = await prisma.user.update({
-        where: { email: req.user.email },
-        data: {
-          creditUsed: retailer.creditUsed - amount,
-        },
-      });
-
-      res.json({
-        message: "Credit settled successfully",
-        creditUsed: updated.creditUsed,
-      });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({
-        message: "Settlement failed",
-      });
-    }
-  }
-);
 
 module.exports = router;

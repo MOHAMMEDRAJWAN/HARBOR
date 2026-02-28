@@ -80,73 +80,73 @@ router.post(
         let paymentStatus = "unpaid";
         let creditStatus = "none";
 
-        // ==========================
-        // CREDIT PAYMENT LOGIC
-        // ==========================
-        if (method === "CREDIT") {
-          // Find retailer and wholesaler (store owner)
-          const retailer = await tx.user.findUnique({
-            where: { email: req.user.email },
-          });
+// ==========================
+// CREDIT PAYMENT LOGIC
+// ==========================
+if (method === "CREDIT") {
 
-          if (!retailer) {
-            throw new Error("Retailer not found");
-          }
+  const retailer = await tx.user.findUnique({
+    where: { email: req.user.email },
+  });
 
-          const wholesaler = await tx.user.findUnique({
-            where: { email: store.ownerEmail },
-          });
+  if (!retailer) {
+    throw new Error("Retailer not found");
+  }
 
-          if (!wholesaler) {
-            throw new Error("Store wholesaler not found");
-          }
+  const wholesaler = await tx.user.findUnique({
+    where: { email: store.ownerEmail },
+  });
 
-          // Check for a CreditAccount specific to this wholesaler-retailer pair
-          const creditAccount = await tx.creditAccount.findUnique({
-            where: {
-              wholesalerId_retailerId: {
-                wholesalerId: wholesaler.id,
-                retailerId: retailer.id,
-              },
-            },
-          });
+  if (!wholesaler) {
+    throw new Error("Store wholesaler not found");
+  }
 
-          if (!creditAccount) {
-            // No account exists for this wholesaler -> create a request
-            await tx.user.update({
-              where: { email: req.user.email },
-              data: { creditStatus: "requested" },
-            });
+  // Fetch credit account
+  const creditAccount = await tx.creditAccount.findUnique({
+    where: {
+      wholesalerId_retailerId: {
+        wholesalerId: wholesaler.id,
+        retailerId: retailer.id,
+      },
+    },
+  });
 
-            // (notification creation skipped - wholesaler will see request via /credit/requests)
+  // If no account exists → auto trigger credit request
+  if (!creditAccount) {
 
-            throw new Error(
-              "No credit account with this wholesaler. Credit request sent to wholesaler. Purchase with credit is not allowed until approval."
-            );
-          }
+    await tx.user.update({
+      where: { id: retailer.id },
+      data: { creditStatus: "requested" },
+    });
 
-          if (creditAccount.creditStatus !== "approved") {
-            throw new Error("Credit not approved");
-          }
+    throw new Error(
+      "No credit account with this wholesaler. Credit request sent. Try again after approval."
+    );
+  }
 
-          const available = creditAccount.creditLimit - creditAccount.creditUsed;
+  if (creditAccount.creditStatus !== "approved") {
+    throw new Error("Credit not approved by this wholesaler");
+  }
 
-          if (totalAmount > available) {
-            throw new Error("Insufficient credit limit");
-          }
+  const available =
+    creditAccount.creditLimit - creditAccount.creditUsed;
 
-          // Deduct from the wholesaler-specific credit account
-          await tx.creditAccount.update({
-            where: { id: creditAccount.id },
-            data: {
-              creditUsed: {
-                increment: totalAmount,
-              },
-            },
-          });
+  if (totalAmount > available) {
+    throw new Error("Insufficient credit limit");
+  }
 
-          creditStatus = "approved";
-        }
+  // Deduct from correct CreditAccount safely
+  await tx.creditAccount.update({
+    where: { id: creditAccount.id },
+    data: {
+      creditUsed: {
+        increment: totalAmount,
+      },
+    },
+  });
+
+  creditStatus = "approved";
+}
 
         // ==========================
         // ONLINE PAYMENT STUB

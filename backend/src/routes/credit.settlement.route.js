@@ -8,7 +8,7 @@ const { onlyWholesaler } = require("../middleware/role.middleware");
 // CREDIT SETTLEMENT
 // ===============================
 router.put(
-  "/credit/:retailerId/settle",
+  "/credit/retailer/:retailerId/settle",
   authMiddleware,
   onlyWholesaler,
   async (req, res) => {
