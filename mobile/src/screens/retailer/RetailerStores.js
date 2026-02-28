@@ -5,6 +5,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
+  ScrollView,
+  RefreshControl,
 } from "react-native";
 import api from "../../api/axios";
 import { CartContext } from "../../context/CartContext";
@@ -16,6 +18,7 @@ export default function RetailerStores() {
   const [categories, setCategories] = useState({});
   const [products, setProducts] = useState({});
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const { addToCart } = useContext(CartContext);
 
@@ -29,7 +32,14 @@ export default function RetailerStores() {
       setStores(res.data.stores || []);
     } catch (err) {
       console.log("Store fetch failed", err);
+    } finally {
+      setRefreshing(false);
     }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchStores();
   };
 
   const fetchCategories = async (storeId) => {
@@ -57,7 +67,17 @@ export default function RetailerStores() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={["#4f8cff"]}
+          tintColor="#4f8cff"
+        />
+      }
+    >
       {stores.map((store) => (
         <View key={store.id} style={styles.storeCard}>
           <TouchableOpacity
@@ -120,7 +140,7 @@ export default function RetailerStores() {
             ))}
         </View>
       ))}
-    </View>
+    </ScrollView>
   );
 }
 

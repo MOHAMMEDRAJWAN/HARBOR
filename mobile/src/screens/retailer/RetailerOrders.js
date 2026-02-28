@@ -5,12 +5,14 @@ import {
   FlatList,
   StyleSheet,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import api from "../../api/axios";
 
 export default function RetailerOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchOrders = async () => {
     try {
@@ -20,7 +22,13 @@ export default function RetailerOrders() {
       console.log("Failed to fetch orders", err);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchOrders();
   };
 
   useEffect(() => {
@@ -120,6 +128,14 @@ export default function RetailerOrders() {
     <View style={styles.container}>
       <FlatList
         data={orders}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={onRefresh}
+                    colors={["#4f8cff"]}
+                    tintColor="#4f8cff"
+                  />
+                }
         keyExtractor={(item) =>
           item.id.toString()
         }

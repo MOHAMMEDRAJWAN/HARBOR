@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   StyleSheet,
   TouchableOpacity,
+  RefreshControl,
 } from "react-native";
 import { CartContext } from "../../context/CartContext";
 import api from "../../api/axios";
@@ -16,6 +17,7 @@ export default function RetailerProducts({ route }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const { addToCart } = useContext(CartContext);
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchProducts = async () => {
     try {
@@ -25,7 +27,13 @@ export default function RetailerProducts({ route }) {
       console.log("Failed to fetch products", err.response?.data);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchProducts();
   };
 
   useEffect(() => {
@@ -77,6 +85,14 @@ export default function RetailerProducts({ route }) {
         data={products}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderItem}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={onRefresh}
+                    colors={["#4f8cff"]}
+                    tintColor="#4f8cff"
+                  />
+                }
         contentContainerStyle={{ padding: 16 }}
       />
     </View>

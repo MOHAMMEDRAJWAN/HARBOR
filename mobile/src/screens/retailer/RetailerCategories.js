@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
+  RefreshControl,
 } from "react-native";
 import api from "../../api/axios";
 
@@ -14,6 +15,7 @@ export default function RetailerCategories({ route, navigation }) {
 
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchCategories = async () => {
     try {
@@ -23,7 +25,13 @@ export default function RetailerCategories({ route, navigation }) {
       console.log("Failed to fetch categories", err);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchCategories();
   };
 
   useEffect(() => {
@@ -43,6 +51,14 @@ export default function RetailerCategories({ route, navigation }) {
       <FlatList
         data={categories}
         keyExtractor={(item) => item.id.toString()}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={onRefresh}
+                    colors={["#4f8cff"]}
+                    tintColor="#4f8cff"
+                  />
+                }
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.card}

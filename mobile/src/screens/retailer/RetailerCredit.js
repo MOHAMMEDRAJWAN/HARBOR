@@ -6,6 +6,8 @@ import {
   ActivityIndicator,
   StyleSheet,
   TextInput,
+  ScrollView,
+  RefreshControl,
 } from "react-native";
 import api from "../../api/axios";
 
@@ -13,6 +15,7 @@ export default function RetailerCredit() {
   const [credit, setCredit] = useState(null);
   const [loading, setLoading] = useState(true);
   const [amount, setAmount] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchCredit = async () => {
     try {
@@ -22,7 +25,13 @@ export default function RetailerCredit() {
       console.log("Credit fetch failed", err.response?.data);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchCredit();
   };
 
   const requestCredit = async () => {
@@ -67,7 +76,17 @@ export default function RetailerCredit() {
     (credit?.creditLimit || 0) - (credit?.creditUsed || 0);
 
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={["#4f8cff"]}
+          tintColor="#4f8cff"
+        />
+      }
+    >
       {/* Status Card */}
       <View style={styles.card}>
         <Text style={styles.label}>Credit Status</Text>
@@ -136,7 +155,7 @@ export default function RetailerCredit() {
             </TouchableOpacity>
           </View>
         )}
-    </View>
+    </ScrollView>
   );
 }
 

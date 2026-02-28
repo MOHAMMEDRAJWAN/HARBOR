@@ -5,8 +5,10 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
+  ScrollView,
+  RefreshControl,
 } from "react-native";
-import { useContext, useState } from "react";
+import { useContext, useState, useEffect } from "react";
 import { AuthContext } from "../../context/AuthContext";
 import api from "../../api/axios";
 
@@ -20,6 +22,25 @@ export default function RetailerProfile() {
     user?.address || ""
   );
   const [saving, setSaving] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const refreshProfile = async () => {
+    try {
+      const res = await api.get("/me");
+      setName(res.data.user?.name || "");
+      setPhone(res.data.user?.phone || "");
+      setAddress(res.data.user?.address || "");
+    } catch (err) {
+      console.log("Failed to refresh profile", err);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refreshProfile();
+  };
 
   const saveProfile = async () => {
     try {
@@ -46,7 +67,17 @@ export default function RetailerProfile() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={["#4f8cff"]}
+          tintColor="#4f8cff"
+        />
+      }
+    >
       <Text style={styles.title}>Profile</Text>
 
       <View style={styles.card}>
@@ -97,7 +128,7 @@ export default function RetailerProfile() {
       >
         <Text style={styles.btnText}>Logout</Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 }
 

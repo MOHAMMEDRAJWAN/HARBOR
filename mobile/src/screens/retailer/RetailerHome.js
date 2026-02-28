@@ -6,6 +6,7 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { CartContext } from "../../context/CartContext";
 import api from "../../api/axios";
@@ -13,6 +14,7 @@ import api from "../../api/axios";
 export default function RetailerHome() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const { addToCart } = useContext(CartContext);
 
   useEffect(() => {
@@ -30,7 +32,13 @@ export default function RetailerHome() {
       );
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchOrders();
   };
 
   /* ===============================
@@ -156,6 +164,14 @@ export default function RetailerHome() {
     </View>
   );
 }
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#4f8cff"]}
+            tintColor="#4f8cff"
+          />
+        }
 
 /* ===============================
    Dashboard Card Component
