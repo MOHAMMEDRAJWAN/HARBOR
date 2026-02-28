@@ -22,21 +22,23 @@ export default function CreditAccounts() {
   }, []);
 
   const settleCredit = async (retailerId) => {
-    const amount = prompt("Enter settlement amount:");
+  const amount = prompt("Enter settlement amount:");
 
-    if (!amount) return;
+  if (!amount) return;
 
-    try {
-      await api.put(`/credit/${retailerId}/settle`, {
-        amount: Number(amount),
-      });
+  try {
+    await api.put(`/credit/retailer/${retailerId}/settle`, {
+      amount: Number(amount),
+    });
 
-      alert("Credit settled successfully");
-      fetchAccounts();
-    } catch (err) {
-      alert("Settlement failed");
-    }
-  };
+    alert("Credit settled successfully");
+    fetchAccounts();
+  } catch (err) {
+    alert(
+      err.response?.data?.message || "Settlement failed"
+    );
+  }
+};
 
   return (
     <div className="card">

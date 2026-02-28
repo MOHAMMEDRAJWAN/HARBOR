@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback } from "react";
 import {
   View,
   Text,
@@ -33,6 +35,13 @@ export default function AgentOrders() {
     }
   };
 
+  //  Auto refresh when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      fetchOrders();
+    }, [])
+  );
+
   const confirmDelivery = async () => {
     if (!selectedOrderId) return;
 
@@ -49,7 +58,7 @@ export default function AgentOrders() {
       setEarnedAmount(earnings);
       setSuccessVisible(true);
 
-      fetchOrders();
+      await fetchOrders(); // ensure refresh completes
     } catch (err) {
       alert(err.response?.data?.message || "Delivery failed");
     }
