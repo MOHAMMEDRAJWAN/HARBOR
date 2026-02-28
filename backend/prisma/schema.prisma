@@ -8,20 +8,37 @@ datasource db {
 }
 
 model User {
+  id                     Int             @id @default(autoincrement())
+  email                  String          @unique
+  password               String
+  role                   Role
+  createdAt              DateTime        @default(now())
+  address                String
+  businessName           String?
+  name                   String
+  phone                  String
+  creditLimit            Float           @default(0)
+  creditStatus           CreditStatus    @default(none)
+  creditUsed             Float           @default(0)
+  Order                  Order[]
+  stores                 Store[]
+  approvedCreditAccounts CreditAccount[] @relation("Wholesaler")
+  retailerCreditAccounts CreditAccount[] @relation("Retailer")
+}
+
+model CreditAccount {
   id           Int          @id @default(autoincrement())
-  email        String       @unique
-  password     String
-  role         Role
-  createdAt    DateTime     @default(now())
-  address      String
-  businessName String?
-  name         String
-  phone        String
-  creditLimit  Float        @default(0)
-  creditStatus CreditStatus @default(none)
+  wholesalerId Int
+  retailerId   Int
+  creditLimit  Float
   creditUsed   Float        @default(0)
-  Order        Order[]
-  stores       Store[]
+  creditStatus CreditStatus @default(none)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  wholesaler   User         @relation("Wholesaler", fields: [wholesalerId], references: [id])
+  retailer     User         @relation("Retailer", fields: [retailerId], references: [id])
+
+  @@unique([wholesalerId, retailerId])
 }
 
 model Store {
@@ -58,12 +75,12 @@ model Product {
 }
 
 model Order {
-  id            Int           @id @default(autoincrement())
+  id            Int         @id @default(autoincrement())
   retailerEmail String
   storeId       Int
-  status        OrderStatus   @default(pending)
+  status        OrderStatus @default(pending)
 
-  agentEarnings Float?        @default(0)  // ✅ Added safely
+  agentEarnings Float? @default(0) // ✅ Added safely
 
   totalAmount   Float
   agentEmail    String?
@@ -72,9 +89,9 @@ model Order {
   paymentMethod PaymentMethod @default(COD)
   paymentStatus PaymentStatus @default(unpaid)
 
-  User          User          @relation(fields: [retailerEmail], references: [email])
-  store         Store         @relation(fields: [storeId], references: [id])
-  items         OrderItem[]
+  User  User        @relation(fields: [retailerEmail], references: [email])
+  store Store       @relation(fields: [storeId], references: [id])
+  items OrderItem[]
 }
 
 model OrderItem {
