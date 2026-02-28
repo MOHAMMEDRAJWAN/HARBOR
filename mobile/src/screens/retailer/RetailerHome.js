@@ -6,7 +6,6 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
-  RefreshControl,
 } from "react-native";
 import { CartContext } from "../../context/CartContext";
 import api from "../../api/axios";
@@ -127,9 +126,9 @@ export default function RetailerHome() {
         ) : (
           <FlatList
             data={frequentProducts}
-            keyExtractor={(item) =>
-              item.id.toString()
-            }
+            keyExtractor={(item) => item.id.toString()}
+            refreshing={refreshing}
+            onRefresh={onRefresh}
             renderItem={({ item }) => (
               <View style={styles.productCard}>
                 <Text style={styles.productName}>
@@ -164,14 +163,7 @@ export default function RetailerHome() {
     </View>
   );
 }
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={["#4f8cff"]}
-            tintColor="#4f8cff"
-          />
-        }
+
 
 /* ===============================
    Dashboard Card Component
