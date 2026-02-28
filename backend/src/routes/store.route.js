@@ -41,6 +41,29 @@ router.post("/stores", authMiddleware, onlyWholesaler, async (req, res) => {
 });
 
 
+// GET CURRENT WHOLESALER'S STORE
+router.get("/stores/my", authMiddleware, onlyWholesaler, async (req, res) => {
+  try {
+    const store = await prisma.store.findFirst({
+      where: { ownerEmail: req.user.email },
+      select: {
+        id: true,
+        name: true,
+        address: true,
+      },
+    });
+
+    if (!store) {
+      return res.status(404).json({ message: "Store not found. Please create a store first." });
+    }
+
+    res.json({ store });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to fetch store" });
+  }
+});
+
 // GET ALL STORES (RETAILER BROWSING)
 // LIST STORES (Retailer / Public browsing)
 router.get("/stores", authMiddleware, async (req, res) => {

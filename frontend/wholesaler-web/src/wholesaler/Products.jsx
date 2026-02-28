@@ -47,8 +47,8 @@ export default function Products() {
 
   const handleAddCategory = async () => {
     try {
-      const storeRes = await api.get("/stores");
-      const storeId = storeRes.data.stores[0].id;
+      const storeRes = await api.get("/stores/my");
+      const storeId = storeRes.data.store.id;
 
       await api.post(`/categories/${storeId}`, {
         name: newCategory,
@@ -57,7 +57,8 @@ export default function Products() {
       setNewCategory("");
       setShowAddCategory(false);
       fetchCategories();
-    } catch {
+    } catch (err) {
+      console.error(err);
       alert("Failed to add category");
     }
   };
