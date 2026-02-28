@@ -84,6 +84,7 @@ router.post(
         // CREDIT PAYMENT LOGIC
         // ==========================
         if (method === "CREDIT") {
+          // Find retailer and wholesaler (store owner)
           const retailer = await tx.user.findUnique({
             where: { email: req.user.email },
           });
@@ -92,26 +93,55 @@ router.post(
             throw new Error("Retailer not found");
           }
 
-          if (retailer.creditStatus !== "approved") {
+          const wholesaler = await tx.user.findUnique({
+            where: { email: store.ownerEmail },
+          });
+
+          if (!wholesaler) {
+            throw new Error("Store wholesaler not found");
+          }
+
+          // Check for a CreditAccount specific to this wholesaler-retailer pair
+          const creditAccount = await tx.creditAccount.findUnique({
+            where: {
+              wholesalerId_retailerId: {
+                wholesalerId: wholesaler.id,
+                retailerId: retailer.id,
+              },
+            },
+          });
+
+          if (!creditAccount) {
+            // No account exists for this wholesaler -> create a request
+            await tx.user.update({
+              where: { email: req.user.email },
+              data: { creditStatus: "requested" },
+            });
+
+            throw new Error(
+              "No credit account with this wholesaler. Credit request sent to wholesaler. Purchase with credit is not allowed until approval."
+            );
+          }
+
+          if (creditAccount.creditStatus !== "approved") {
             throw new Error("Credit not approved");
           }
 
-          const available =
-            retailer.creditLimit - retailer.creditUsed;
+          const available = creditAccount.creditLimit - creditAccount.creditUsed;
 
           if (totalAmount > available) {
             throw new Error("Insufficient credit limit");
           }
 
-          /* Deduct credit safely
-          await tx.user.update({
-            where: { email: req.user.email },
+          // Deduct from the wholesaler-specific credit account
+          await tx.creditAccount.update({
+            where: { id: creditAccount.id },
             data: {
               creditUsed: {
                 increment: totalAmount,
               },
             },
-          });*/
+          });
 
           creditStatus = "approved";
         }
