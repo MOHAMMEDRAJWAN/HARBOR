@@ -155,19 +155,7 @@ if (method === "CREDIT") {
           paymentStatus = "paid";
         }
 
-        // ==========================
-        // Reduce product stock
-        // ==========================
-        for (const item of items) {
-          await tx.product.update({
-            where: { id: item.productId },
-            data: {
-              stock: {
-                decrement: item.quantity,
-              },
-            },
-          });
-        }
+        
 
         // ==========================
         // Create Order

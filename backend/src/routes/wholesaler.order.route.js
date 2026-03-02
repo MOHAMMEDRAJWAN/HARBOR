@@ -106,7 +106,7 @@ router.post(
         });
       }
 
-      // 🔹 Reduce stock (still here for now)
+      // 🔹 Reduce stock 
       for (const item of order.items) {
         await prisma.product.update({
           where: { id: item.productId },
